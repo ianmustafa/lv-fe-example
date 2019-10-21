@@ -1,58 +1,108 @@
 <template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
-    <p>
-      For a guide and recipes on how to configure / customize this project,<br>
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.
-    </p>
-    <h3>Installed CLI Plugins</h3>
-    <ul>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel" target="_blank" rel="noopener">babel</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-eslint" target="_blank" rel="noopener">eslint</a></li>
-    </ul>
-    <h3>Essential Links</h3>
-    <ul>
-      <li><a href="https://vuejs.org" target="_blank" rel="noopener">Core Docs</a></li>
-      <li><a href="https://forum.vuejs.org" target="_blank" rel="noopener">Forum</a></li>
-      <li><a href="https://chat.vuejs.org" target="_blank" rel="noopener">Community Chat</a></li>
-      <li><a href="https://twitter.com/vuejs" target="_blank" rel="noopener">Twitter</a></li>
-      <li><a href="https://news.vuejs.org" target="_blank" rel="noopener">News</a></li>
-    </ul>
-    <h3>Ecosystem</h3>
-    <ul>
-      <li><a href="https://router.vuejs.org" target="_blank" rel="noopener">vue-router</a></li>
-      <li><a href="https://vuex.vuejs.org" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-devtools#vue-devtools" target="_blank" rel="noopener">vue-devtools</a></li>
-      <li><a href="https://vue-loader.vuejs.org" target="_blank" rel="noopener">vue-loader</a></li>
-      <li><a href="https://github.com/vuejs/awesome-vue" target="_blank" rel="noopener">awesome-vue</a></li>
-    </ul>
-  </div>
+  <v-container>
+    <v-row>
+      <v-col md="8">
+        <v-data-table
+          :headers="table.headers"
+          :items="table.items"
+          class="elevation-1">
+          <template #item.gender="{ value }">
+            {{ value === 'm' ? 'Male' : 'Female' }}
+          </template>
+
+          <template #item.actions="{ item }">
+            <v-btn color="primary" @click="handleEdit(item)">Edit</v-btn>
+          </template>
+        </v-data-table>
+      </v-col>
+
+      <v-col md="4">
+        <v-text-field
+          v-model="payload.name"
+          label="Name" />
+        <v-radio-group v-model="payload.gender">
+          <v-radio
+            v-for="gender in options.gender"
+            :key="gender.value"
+            :label="gender.text"
+            :value="gender.value"
+          ></v-radio>
+        </v-radio-group>
+        <v-textarea
+          v-model="payload.address"
+          label="Address" />
+        <v-btn color="primary" @click="handleSubmit">Submit</v-btn>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script>
 export default {
-  name: 'HelloWorld',
-  props: {
-    msg: String
-  }
-}
-</script>
+  data: () => ({
+    table: {
+      headers: [
+        {
+          text: 'Name',
+          sortable: false,
+          value: 'name',
+        },
+        {
+          text: 'Gender',
+          sortable: false,
+          value: 'gender',
+        },
+        {
+          text: 'Address',
+          sortable: false,
+          value: 'address',
+        },
+        {
+          text: 'Actions',
+          sortable: false,
+          value: 'actions',
+        },
+      ],
+      items: [],
+    },
+    options: {
+      gender: [
+        { text: 'Male', value: 'm' },
+        { text: 'Female', value: 'f' },
+      ]
+    },
+    payload: {
+      name: '',
+      gender: '',
+      address: '',
+    }
+  }),
+  methods: {
+    async handleSubmit() {
+      if ('id' in this.payload) {
+        const response = await this.$axios.patch(`http://localhost:8000/api/people/${this.payload.id}`, this.payload);
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
-}
-</style>
+      } else {
+        const response = await this.$axios.post('http://localhost:8000/api/people', this.payload);
+
+        this.table.items.push(response.data);
+      }
+
+
+      this.payload = {
+        name: '',
+        gender: '',
+        address: '',
+      };
+    },
+    handleEdit(payload) {
+      this.payload = payload;
+    }
+  },
+  async mounted() {
+    const response = await this.$axios.get('http://localhost:8000/api/people');
+    
+    this.table.items = response.data;
+  }
+};
+</script>
